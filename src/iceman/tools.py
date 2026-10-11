@@ -3,6 +3,7 @@ import os
 import re
 import time
 from typing import Optional
+import csv
 
 import requests
 from dotenv import load_dotenv
@@ -251,3 +252,37 @@ def fill_email_from_images(records: list[dict], max_images: int = 10, delay: flo
             r["email_text"] = address
     print(f"attempted {attempted} image reads")
     return records
+
+
+CSV_COLUMNS = ["name", "dept", "title", "email", "field_of_work", "profile_url"]
+
+
+def records_to_rows(records: list[dict]) -> list[dict]:
+    """Flatten records into CSV rows with the columns the user asked for."""
+    rows = []
+    for r in records:
+        rows.append({
+            "name": r.get("name") or "",
+            "dept": r.get("dept") or "",
+            "title": r.get("title") or "",
+            "email": r.get("email_text") or r.get("email_image_url") or "",
+            "field_of_work": "; ".join(r.get("field_of_work") or []),
+            "profile_url": r.get("profile_url") or "",
+        })
+    return rows
+
+
+@tool
+def save_faculty_csv(records: list[dict], path: str = "faculty.csv") -> str:
+    """Save faculty records to a CSV file.
+
+    Args:
+        records: The faculty records from extract_faculty, enriched and filled.
+        path: Where to write the CSV, relative to the project folder.
+    """
+    rows = records_to_rows(records)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+    return f"Saved {len(rows)} records to {path}"
