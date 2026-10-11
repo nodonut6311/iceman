@@ -1,0 +1,25 @@
+[project]
+name = "iceman"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "rohan", email = "roamd6311@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "firecrawl-py>=4.50.0",
+    "langchain-core>=1.6.9",
+    "langchain-google-genai>=4.4.1",
+    "langgraph>=1.2.14",
+    "pydantic>=2.14.0",
+    "python-dotenv>=1.2.4",
+    "rich>=15.0.0",
+]
+
+[project.scripts]
+iceman = "iceman:main"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
