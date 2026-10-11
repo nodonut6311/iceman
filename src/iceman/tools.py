@@ -256,6 +256,18 @@ def fill_email_from_images(records: list[dict], max_images: int = 10, delay: flo
 
 CSV_COLUMNS = ["name", "dept", "title", "email", "field_of_work", "profile_url"]
 
+def normalize_email(text: str | None) -> str:
+    """Turn 'name [AT] domain', 'name(at)domain', '<name@domain>' or 'mailto:' into a plain address.
+
+    Returns an empty string if no address can be found.
+    """
+    if not text:
+        return ""
+    t = re.sub(r"\s*[\[\(]\s*at\s*[\]\)]\s*", "@", text, flags=re.I)
+    t = re.sub(r"\s*[\[\(]\s*dot\s*[\]\)]\s*", ".", t, flags=re.I)
+    t = t.replace("mailto:", "").strip().strip("<>").strip()
+    m = re.search(r"[\w.+-]+@[\w.-]+\.\w+", t)
+    return m.group(0) if m else ""
 
 def records_to_rows(records: list[dict]) -> list[dict]:
     """Flatten records into CSV rows with the columns the user asked for."""
@@ -265,7 +277,7 @@ def records_to_rows(records: list[dict]) -> list[dict]:
             "name": r.get("name") or "",
             "dept": r.get("dept") or "",
             "title": r.get("title") or "",
-            "email": r.get("email_text") or r.get("email_image_url") or "",
+            "email": normalize_email(r.get("email_text")),
             "field_of_work": "; ".join(r.get("field_of_work") or []),
             "profile_url": r.get("profile_url") or "",
         })
@@ -286,3 +298,32 @@ def save_faculty_csv(records: list[dict], path: str = "faculty.csv") -> str:
         writer.writeheader()
         writer.writerows(rows)
     return f"Saved {len(rows)} records to {path}"
+
+_STATE = {"records": []}
+
+
+@tool
+def load_faculty(url: str) -> str:
+    """Extract every faculty member from a listing page and keep them for the next steps."""
+    _STATE["records"] = extract_faculty.invoke({"url": url})
+    return f"Found {len(_STATE['records'])} faculty records."
+
+
+@tool
+def enrich_stored(max_profiles: int = 10) -> str:
+    """Fill missing emails and research topics from profile pages for the loaded records."""
+    _STATE["records"] = enrich_records(_STATE["records"], max_profiles=max_profiles)
+    return "Profile enrichment done."
+
+
+@tool
+def read_stored_email_images(max_images: int = 10) -> str:
+    """Read emails from images for loaded records that still have no text email."""
+    _STATE["records"] = fill_email_from_images(_STATE["records"], max_images=max_images)
+    return "Image email step done."
+
+
+@tool
+def save_stored_csv(path: str = "faculty.csv") -> str:
+    """Save the loaded faculty records to a CSV file."""
+    return save_faculty_csv.invoke({"records": _STATE["records"], "path": path})
