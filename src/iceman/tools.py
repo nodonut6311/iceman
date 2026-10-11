@@ -226,10 +226,11 @@ def enrich_records(records: list[dict], max_profiles: int = 50, delay: float = 2
         time.sleep(delay)
     return records
 
-def fill_email_from_images(records: list[dict], max_images: int = 10) -> list[dict]:
+def fill_email_from_images(records: list[dict], max_images: int = 10, delay: float = 3.0) -> list[dict]:
     """For records with no text email, read the email from its image.
 
     Keeps the result only if it contains an @. Stops after max_images attempts.
+    Pauses between reads so the server does not block the client.
     Values already present are not changed.
     """
     attempted = 0
@@ -238,11 +239,13 @@ def fill_email_from_images(records: list[dict], max_images: int = 10) -> list[di
             continue
         if attempted >= max_images:
             break
+        if attempted > 0:
+            time.sleep(delay)
         attempted += 1
         try:
             address = read_email_image.invoke({"image_url": r["email_image_url"]})
         except Exception as e:
-            print(f"image read failed for {r['name']}: {type(e).__name__}")
+            print(f"image read failed for {r['name']}: {str(e)[:200]}")
             continue
         if address and "@" in address:
             r["email_text"] = address
