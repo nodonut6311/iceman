@@ -74,7 +74,7 @@ uv run iceman
 Type a request at the `you>` prompt, for example:
 
 ```
-Make a CSV of faculty from https://analytics.berkeley.edu/faculty/ and save it as berkeley.csv
+Make a CSV of faculty from <FACULTY-PAGE-URL-HERE> and save it as <SAMPLE>.csv
 ```
 
 The assistant loads the records first. Before any step that makes model calls, it reports how many calls it will make and waits for your answer. Reply `yes`, or name a different limit such as `yes, up to 5 profiles`. Type `quit` to exit.
