@@ -68,7 +68,7 @@ Never commit `.env`. It is already listed in `.gitignore`.
 Start the tool:
 
 ```
-uv run iceman
+uv run iceman 
 ```
 
 Type a request at the `you>` prompt, for example:
