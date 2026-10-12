@@ -8,9 +8,12 @@ from langchain_core.messages import SystemMessage
 
 from iceman.tools import (
     load_faculty,
+    count_profiles_needed,
     enrich_stored,
+    count_images_needed,
     read_stored_email_images,
     save_stored_csv,
+    stored_summary,
 )
 
 load_dotenv()
@@ -19,13 +22,13 @@ MAX_STEPS = 12
 
 SYSTEM_PROMPT = """You are a faculty directory assistant. You build CSV files of faculty members from university faculty pages.
 
-Workflow for a request like "make a CSV of faculty from <URL>":
-1. Call load_faculty with the URL.
-2. Call enrich_stored to fill missing emails and research topics. Use max_profiles of 10 unless the user asks for more.
-3. Call read_stored_email_images to read emails from images. Use max_images of 10 unless the user asks for more.
-4. Call save_stored_csv with the path the user gives, or faculty.csv by default.
-
-Report the total count and the output file path when done. Never invent people or emails: only use what the tools return."""
+Rules:
+- Only report numbers that a tool returned. Never estimate or count yourself.
+- Call load_faculty with the URL first. It is cheap, so do it without asking.
+- Before enrichment, call count_profiles_needed and tell the user the number. If it is 0, say so and skip the step. If it is more than 0, ask whether to go ahead and wait for a reply. Only call enrich_stored after a yes, using the limit the user approved.
+- Before image reads, call count_images_needed and do the same: report the number, skip if 0, otherwise ask and wait. Only call read_stored_email_images after a yes, using the limit the user approved.
+- Call save_stored_csv with the path the user gives, or faculty.csv by default.
+- Finish by calling stored_summary and reporting its numbers exactly as returned."""
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite",
@@ -34,7 +37,15 @@ llm = ChatGoogleGenerativeAI(
     max_retries=0,
 )
 
-AGENT_TOOLS = [load_faculty, enrich_stored, read_stored_email_images, save_stored_csv]
+AGENT_TOOLS = [
+    load_faculty,
+    count_profiles_needed,
+    enrich_stored,
+    count_images_needed,
+    read_stored_email_images,
+    save_stored_csv,
+    stored_summary,
+]
 llm_with_tools = llm.bind_tools(AGENT_TOOLS)
 
 

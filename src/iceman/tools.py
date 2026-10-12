@@ -327,3 +327,28 @@ def read_stored_email_images(max_images: int = 10) -> str:
 def save_stored_csv(path: str = "faculty.csv") -> str:
     """Save the loaded faculty records to a CSV file."""
     return save_faculty_csv.invoke({"records": _STATE["records"], "path": path})
+
+def _images_needed() -> int:
+    return sum(1 for r in _STATE["records"] if not r.get("email_text") and r.get("email_image_url"))
+
+
+@tool
+def count_profiles_needed() -> str:
+    """Count loaded records that need a profile fetch (missing email or research topics)."""
+    n = sum(1 for r in _STATE["records"] if _needs_profile(r) and r.get("profile_url"))
+    return f"{n} records need a profile fetch."
+
+
+@tool
+def count_images_needed() -> str:
+    """Count loaded records with no text email that have an email image."""
+    return f"{_images_needed()} records need an image read."
+
+
+@tool
+def stored_summary() -> str:
+    """Report totals for the loaded records: total, with text email, with research topics."""
+    recs = _STATE["records"]
+    emails = sum(1 for r in recs if r.get("email_text"))
+    topics = sum(1 for r in recs if r.get("field_of_work"))
+    return f"total={len(recs)}, with_text_email={emails}, with_topics={topics}"
